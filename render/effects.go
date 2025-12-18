@@ -100,6 +100,9 @@ func ApplyColorBleedAt(style tcell.Style, ctx EffectsContext, x, y int) tcell.St
 }
 
 func RenderWhisper(screen tcell.Screen, corruption float64) {
+	if screen == nil {
+		return
+	}
 	w, h := screen.Size()
 	RenderWhisperAt(screen, EffectsContext{
 		Corruption: corruption,
@@ -152,6 +155,9 @@ func RenderWhisperAt(screen tcell.Screen, ctx EffectsContext, width, height int)
 }
 
 func ApplyFakeGeometry(screen tcell.Screen, corruption float64) {
+	if screen == nil {
+		return
+	}
 	w, h := screen.Size()
 	ApplyFakeGeometryAt(screen, EffectsContext{
 		Corruption: corruption,

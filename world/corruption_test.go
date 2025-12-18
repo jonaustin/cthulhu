@@ -1,10 +1,14 @@
 package world
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestCorruptionCalculateLevel(t *testing.T) {
 	c := NewCorruption()
 
+	const eps = 1e-9
 	cases := []struct {
 		depth int
 		want  float64
@@ -19,7 +23,7 @@ func TestCorruptionCalculateLevel(t *testing.T) {
 
 	for _, tc := range cases {
 		got := c.calculateLevel(tc.depth)
-		if got != tc.want {
+		if math.Abs(got-tc.want) > eps {
 			t.Fatalf("depth %d: expected %f, got %f", tc.depth, tc.want, got)
 		}
 	}
