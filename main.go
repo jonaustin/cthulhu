@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"time"
 
 	"game/engine"
+	"game/world"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -16,29 +18,33 @@ type Game struct {
 	Running      bool
 	Width        int
 	Height       int
-	CurrentFloor int
 	Corruption   float64
 	events       chan tcell.Event
 	Player       *engine.Player
 	GameMap      *engine.GameMap
 	Raycaster    *engine.Raycaster
+	FloorManager *world.FloorManager
+	Floor        *world.Floor
 }
 
 func NewGame(screen tcell.Screen) *Game {
 	w, h := screen.Size()
+	floorManager := world.NewFloorManager()
+	floor := floorManager.GenerateFirstFloor()
 	g := &Game{
 		Screen:       screen,
 		Running:      true,
 		Width:        w,
 		Height:       h,
-		CurrentFloor: 1,
 		Corruption:   0.0,
 		events:       make(chan tcell.Event, 10),
-		GameMap:      engine.NewTestMap(),
+		GameMap:      floor.Map,
 		Raycaster:    engine.NewRaycaster(w, h),
+		FloorManager: floorManager,
+		Floor:        floor,
 	}
-	// Start player in open area of test map (position 8, 8 facing north)
-	g.Player = engine.NewPlayer(8.5, 8.5, -3.14159/2) // facing north (up)
+	// Start player at floor spawn (facing north).
+	g.Player = engine.NewPlayerAtCell(floor.SpawnPos.X, floor.SpawnPos.Y, -math.Pi/2)
 	// Start event polling goroutine
 	go g.pollEvents()
 	return g
@@ -97,11 +103,17 @@ func (g *Game) processEvent(ev tcell.Event) {
 
 // update processes game state changes
 func (g *Game) update() {
-	// Placeholder for game logic:
-	// - Player movement
-	// - Corruption increase
-	// - Floor transitions
-	// - Watcher spawning
+	if g.FloorManager == nil || g.Floor == nil || g.GameMap == nil || g.Player == nil {
+		return
+	}
+
+	cellX := int(math.Floor(g.Player.X))
+	cellY := int(math.Floor(g.Player.Y))
+	if g.GameMap.GetCell(cellX, cellY) == engine.CellStairs {
+		g.Floor = g.FloorManager.DescendToNextFloor()
+		g.GameMap = g.Floor.Map
+		g.Player.SetCell(g.Floor.SpawnPos.X, g.Floor.SpawnPos.Y)
+	}
 }
 
 // render draws the current game state to screen
@@ -115,7 +127,11 @@ func (g *Game) render() {
 	hudStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen).Background(tcell.ColorBlack)
 
 	// Status line at top
-	status := fmt.Sprintf(" Floor: %d | Corruption: %.0f%% ", g.CurrentFloor, g.Corruption*100)
+	depth := 0
+	if g.Floor != nil {
+		depth = g.Floor.Depth
+	}
+	status := fmt.Sprintf(" Depth: %d | Corruption: %.0f%% ", depth, g.Corruption*100)
 	g.drawString(0, 0, status, hudStyle)
 
 	// Controls at bottom
