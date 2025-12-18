@@ -20,6 +20,7 @@ type Game struct {
 	Width        int
 	Height       int
 	Corruption   float64
+	CorruptState *world.Corruption
 	Hint         string
 	events       chan tcell.Event
 	Player       *engine.Player
@@ -39,6 +40,7 @@ func NewGame(screen tcell.Screen) *Game {
 		Width:        w,
 		Height:       h,
 		Corruption:   0.0,
+		CorruptState: world.NewCorruption(),
 		events:       make(chan tcell.Event, 10),
 		GameMap:      floor.Map,
 		Raycaster:    engine.NewRaycaster(w, h),
@@ -117,6 +119,15 @@ func (g *Game) update() {
 		g.GameMap = g.Floor.Map
 		g.Player.SetCell(g.Floor.SpawnPos.X, g.Floor.SpawnPos.Y)
 	}
+
+	depth := 0
+	if g.Floor != nil {
+		depth = g.Floor.Depth
+	}
+	if g.CorruptState != nil {
+		g.CorruptState.Update(depth)
+		g.Corruption = g.CorruptState.GetLevel()
+	}
 }
 
 // render draws the current game state to screen
@@ -124,7 +135,15 @@ func (g *Game) render() {
 	g.Screen.Clear()
 
 	// Render 3D view using raycaster
-	g.Raycaster.Render(g.Screen, g.Player, g.GameMap)
+	effects := render.NewEffectsContext(0, 0, 0)
+	if g.CorruptState != nil {
+		effects = render.NewEffectsContext(g.CorruptState.Depth, g.CorruptState.GetLevel(), g.CorruptState.Ticks)
+	}
+	g.Raycaster.RenderWithEffects(g.Screen, g.Player, g.GameMap, effects)
+
+	// Screen-space corruption overlays (below HUD).
+	render.RenderWhisperAt(g.Screen, effects, g.Width, g.Height)
+	render.ApplyFakeGeometryAt(g.Screen, effects, g.Width, g.Height)
 
 	// HUD overlay
 	hudStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen).Background(tcell.ColorBlack)

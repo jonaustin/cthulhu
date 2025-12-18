@@ -32,6 +32,11 @@ func NewRaycaster(width, height int) *Raycaster {
 
 // Render draws the 3D view to the screen
 func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap) {
+	r.RenderWithEffects(screen, player, gameMap, render.EffectsContext{})
+}
+
+// RenderWithEffects draws the 3D view to the screen, applying deterministic corruption effects.
+func (r *Raycaster) RenderWithEffects(screen tcell.Screen, player *Player, gameMap *GameMap, effects render.EffectsContext) {
 	wallStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 	ceilingStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkBlue)
 	floorStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkGray)
@@ -79,7 +84,9 @@ func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap
 				screen.SetContent(x, y, render.CeilingChar, nil, ceilingStyle)
 			} else if y < drawEnd {
 				// Wall
-				screen.SetContent(x, y, wallChar, nil, wallStyle)
+				ch := render.ApplyCharGlitchAt(wallChar, effects, x, y)
+				st := render.ApplyColorBleedAt(wallStyle, effects, x, y)
+				screen.SetContent(x, y, ch, nil, st)
 			} else {
 				// Floor
 				rowFromCenter := y - r.ScreenHeight/2
@@ -101,7 +108,8 @@ func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap
 				endY = r.ScreenHeight
 			}
 			for y := startY; y < endY; y++ {
-				screen.SetContent(x, y, render.StairsChar, nil, stairsStyle)
+				st := render.ApplyColorBleedAt(stairsStyle, effects, x, y)
+				screen.SetContent(x, y, render.StairsChar, nil, st)
 			}
 		}
 	}
