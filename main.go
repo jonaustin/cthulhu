@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"game/engine"
+
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -17,7 +19,9 @@ type Game struct {
 	CurrentFloor int
 	Corruption   float64
 	events       chan tcell.Event
-	// Player and Map will be added when those systems are implemented
+	Player       *engine.Player
+	GameMap      *engine.GameMap
+	Raycaster    *engine.Raycaster
 }
 
 func NewGame(screen tcell.Screen) *Game {
@@ -30,7 +34,11 @@ func NewGame(screen tcell.Screen) *Game {
 		CurrentFloor: 1,
 		Corruption:   0.0,
 		events:       make(chan tcell.Event, 10),
+		GameMap:      engine.NewTestMap(),
+		Raycaster:    engine.NewRaycaster(w, h),
 	}
+	// Start player in open area of test map (position 8, 8 facing north)
+	g.Player = engine.NewPlayer(8.5, 8.5, -3.14159/2) // facing north (up)
 	// Start event polling goroutine
 	go g.pollEvents()
 	return g
@@ -82,6 +90,7 @@ func (g *Game) processEvent(ev tcell.Event) {
 		}
 	case *tcell.EventResize:
 		g.Width, g.Height = ev.Size()
+		g.Raycaster.SetScreenSize(g.Width, g.Height)
 		g.Screen.Sync()
 	}
 }
@@ -99,25 +108,19 @@ func (g *Game) update() {
 func (g *Game) render() {
 	g.Screen.Clear()
 
-	// Placeholder: render basic info until raycaster is implemented
-	style := tcell.StyleDefault.Foreground(tcell.ColorGreen)
-	dimStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkGreen)
+	// Render 3D view using raycaster
+	g.Raycaster.Render(g.Screen, g.Player, g.GameMap)
 
-	// Title
-	title := "THE ABYSS"
-	g.drawString(g.Width/2-len(title)/2, 1, title, style)
+	// HUD overlay
+	hudStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen).Background(tcell.ColorBlack)
 
-	// Status line
-	status := fmt.Sprintf("Floor: %d | Corruption: %.1f%%", g.CurrentFloor, g.Corruption*100)
-	g.drawString(g.Width/2-len(status)/2, 3, status, dimStyle)
+	// Status line at top
+	status := fmt.Sprintf(" Floor: %d | Corruption: %.0f%% ", g.CurrentFloor, g.Corruption*100)
+	g.drawString(0, 0, status, hudStyle)
 
-	// Placeholder for raycaster view
-	viewMsg := "[ Raycaster view will render here ]"
-	g.drawString(g.Width/2-len(viewMsg)/2, g.Height/2, viewMsg, dimStyle)
-
-	// Controls
-	controls := "W/S: Move | A/D: Turn | Q: Quit"
-	g.drawString(g.Width/2-len(controls)/2, g.Height-2, controls, dimStyle)
+	// Controls at bottom
+	controls := " W/S: Move | A/D: Turn | Q: Quit "
+	g.drawString(0, g.Height-1, controls, hudStyle)
 }
 
 // drawString is a helper to draw a string at x,y
