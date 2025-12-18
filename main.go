@@ -28,6 +28,13 @@ type Game struct {
 	Raycaster    *engine.Raycaster
 	FloorManager *world.FloorManager
 	Floor        *world.Floor
+
+	ShowMiniMap bool
+
+	cheatMenuOpen       bool
+	cheatMode           cheatMode
+	cheatTeleportBuffer []rune
+	cheatMessage        string
 }
 
 func NewGame(screen tcell.Screen) *Game {
@@ -46,6 +53,7 @@ func NewGame(screen tcell.Screen) *Game {
 		Raycaster:    engine.NewRaycaster(w, h),
 		FloorManager: floorManager,
 		Floor:        floor,
+		ShowMiniMap:  true,
 	}
 	// Start player at floor spawn (facing north).
 	g.Player = engine.NewPlayerAtCell(floor.SpawnPos.X, floor.SpawnPos.Y, -math.Pi/2)
@@ -81,6 +89,9 @@ func (g *Game) handleInput() {
 func (g *Game) processEvent(ev tcell.Event) {
 	switch ev := ev.(type) {
 	case *tcell.EventKey:
+		if g.handleCheatEvent(ev) {
+			return
+		}
 		switch ev.Key() {
 		case tcell.KeyEscape:
 			g.Running = false
@@ -160,20 +171,20 @@ func (g *Game) render() {
 	g.drawString(0, 0, status, hudStyle)
 
 	// Mini-map (top-right, offset below status line)
-	if g.Floor != nil && g.GameMap != nil && g.Player != nil {
+	if g.ShowMiniMap && g.Floor != nil && g.GameMap != nil && g.Player != nil {
 		cellX, cellY := playerCell(g.Player)
-		lines := buildMiniMap(g.GameMap, cellX, cellY, g.Floor.StairsPos.X, g.Floor.StairsPos.Y, defaultMiniMapRadius)
+		lines := buildMiniMapRect(g.GameMap, cellX, cellY, g.Floor.StairsPos.X, g.Floor.StairsPos.Y, defaultMiniMapRadiusX, defaultMiniMapRadius)
 		if len(lines) > 0 {
 			mapH := len(lines)
 			mapW := len([]rune(lines[0]))
-			startX := g.Width - mapW
+			startX := miniMapStartX(g.Width, mapW)
 			startY := 1
-			if startX < 0 {
-				startX = 0
-			}
 			if startY+mapH < g.Height {
 				for y := 0; y < mapH; y++ {
 					for x, r := range []rune(lines[y]) {
+						if startX+x >= g.Width-miniMapRightMargin {
+							break
+						}
 						style := dimStyle
 						switch r {
 						case '#':
@@ -191,11 +202,15 @@ func (g *Game) render() {
 	}
 
 	// Controls at bottom
-	controls := " W/S: Move | A/D: Turn | Q: Quit "
+	controls := " W/S: Move | A/D: Turn | C: Cheats | Q: Quit "
 	g.drawString(0, g.Height-1, controls, hudStyle)
 
 	if g.Hint != "" && g.Height >= 2 {
 		g.drawString(0, g.Height-2, " "+g.Hint+" ", stairsStyle)
+	}
+
+	if g.cheatMenuOpen {
+		g.renderCheatMenu()
 	}
 }
 

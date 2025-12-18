@@ -57,3 +57,27 @@ func TestCorruptionUpdateSetsStateAndTicks(t *testing.T) {
 		t.Fatalf("expected ticks 2, got %d", c.Ticks)
 	}
 }
+
+func TestCorruptionBiasAdjustsGetLevel(t *testing.T) {
+	c := NewCorruption()
+
+	c.Update(1) // base = 0.0
+	c.AdjustBias(0.5)
+	if got := c.GetLevel(); got != 0.5 {
+		t.Fatalf("expected level 0.5 with bias at depth 1, got %f", got)
+	}
+
+	c.AdjustBias(-0.75) // bias now -0.25
+	if got := c.GetLevel(); got != 0.0 {
+		t.Fatalf("expected clamped level 0.0 with negative bias, got %f", got)
+	}
+
+	c.AdjustBias(2.0) // clamp bias to 1
+	c.Update(60)      // base = 1.0
+	if got := c.GetLevel(); got != 1.0 {
+		t.Fatalf("expected clamped level 1.0 at max, got %f", got)
+	}
+	if got := c.GetBias(); got != 1.0 {
+		t.Fatalf("expected bias clamped to 1.0, got %f", got)
+	}
+}

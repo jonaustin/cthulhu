@@ -7,6 +7,7 @@ const (
 
 type Corruption struct {
 	Level float64 // 0.0 to 1.0
+	Bias  float64 // additive override, -1.0 to 1.0 (clamped in GetLevel)
 	Depth int     // Current floor depth
 	Ticks int     // Frame counter for animation
 }
@@ -29,7 +30,21 @@ func (c *Corruption) GetLevel() float64 {
 	if c == nil {
 		return 0
 	}
-	return clamp01(c.Level)
+	return clamp01(c.Level + c.Bias)
+}
+
+func (c *Corruption) GetBias() float64 {
+	if c == nil {
+		return 0
+	}
+	return clampNeg1To1(c.Bias)
+}
+
+func (c *Corruption) AdjustBias(delta float64) {
+	if c == nil {
+		return
+	}
+	c.Bias = clampNeg1To1(c.Bias + delta)
 }
 
 // calculateLevel maps depth to a corruption value.
@@ -44,4 +59,14 @@ func (c *Corruption) calculateLevel(depth int) float64 {
 		return 1.0
 	}
 	return clamp01(float64(depth-corruptionStartDepth) / span)
+}
+
+func clampNeg1To1(v float64) float64 {
+	if v < -1 {
+		return -1
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
 }

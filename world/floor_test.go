@@ -45,3 +45,22 @@ func TestFloorManagerDescendToNextFloorIncrementsDepth(t *testing.T) {
 		t.Fatalf("expected GetCurrentDepth()=%d, got %d", f2.Depth, fm.GetCurrentDepth())
 	}
 }
+
+func TestFloorManagerTeleportToDepth(t *testing.T) {
+	fm := NewFloorManager()
+	fm.Generator.WithSeed(999)
+
+	fm.GenerateFirstFloor()
+	f10 := fm.TeleportToDepth(10)
+	if f10.Depth != 10 {
+		t.Fatalf("expected depth 10, got %d", f10.Depth)
+	}
+	if fm.GetCurrentDepth() != 10 {
+		t.Fatalf("expected GetCurrentDepth()=10, got %d", fm.GetCurrentDepth())
+	}
+
+	f1 := fm.TeleportToDepth(0)
+	if f1.Depth != 1 {
+		t.Fatalf("expected depth clamped to 1, got %d", f1.Depth)
+	}
+}

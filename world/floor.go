@@ -42,6 +42,13 @@ func (fm *FloorManager) DescendToNextFloor() *Floor {
 	return fm.generateAtDepth(nextDepth)
 }
 
+func (fm *FloorManager) TeleportToDepth(depth int) *Floor {
+	if depth < 1 {
+		depth = 1
+	}
+	return fm.generateAtDepth(depth)
+}
+
 func (fm *FloorManager) GetCurrentDepth() int {
 	if fm.CurrentFloor == nil {
 		return 0
