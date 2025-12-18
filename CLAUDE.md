@@ -8,7 +8,7 @@ A Lovecraftian terminal-based first-person 3D game where the player descends thr
 
 ## Critical Rules (TL;DR)
 
-1. **NEVER commit to main** - Always use feature branches (`feature/<issue-id>-description`)
+1. **NEVER commit to main** - Always use feature branches (`feature/<issue-id>-description`); except when closing a bd issue
 2. **ALL work needs a bd issue** - `bd create --title="..." --type=task|bug|feature`
 3. **ALWAYS use pull requests** - No direct pushes, no skipping review
 4. **ALWAYS add tests** - No untested code
