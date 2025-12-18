@@ -45,3 +45,13 @@ func TestFloorManagerDescendToNextFloorIncrementsDepth(t *testing.T) {
 		t.Fatalf("expected GetCurrentDepth()=%d, got %d", f2.Depth, fm.GetCurrentDepth())
 	}
 }
+
+func TestFloorManagerWithSizeUsesRequestedDimensions(t *testing.T) {
+	fm := NewFloorManagerWithSize(16, 20)
+	fm.Generator.WithSeed(111)
+
+	f := fm.GenerateFirstFloor()
+	if f.Map.Width != 16 || f.Map.Height != 20 {
+		t.Fatalf("expected map 16x20, got %dx%d", f.Map.Width, f.Map.Height)
+	}
+}
