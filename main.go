@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"game/engine"
+	"game/render"
 	"game/world"
 
 	"github.com/gdamore/tcell/v2"
@@ -19,6 +20,7 @@ type Game struct {
 	Width        int
 	Height       int
 	Corruption   float64
+	Hint         string
 	events       chan tcell.Event
 	Player       *engine.Player
 	GameMap      *engine.GameMap
@@ -107,8 +109,9 @@ func (g *Game) update() {
 		return
 	}
 
-	cellX := int(math.Floor(g.Player.X))
-	cellY := int(math.Floor(g.Player.Y))
+	cellX, cellY := playerCell(g.Player)
+
+	g.Hint = stairsHint(cellX, cellY, g.Floor.StairsPos.X, g.Floor.StairsPos.Y)
 	if g.GameMap.GetCell(cellX, cellY) == engine.CellStairs {
 		g.Floor = g.FloorManager.DescendToNextFloor()
 		g.GameMap = g.Floor.Map
@@ -125,6 +128,9 @@ func (g *Game) render() {
 
 	// HUD overlay
 	hudStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen).Background(tcell.ColorBlack)
+	playerStyle := tcell.StyleDefault.Foreground(tcell.ColorAqua).Background(tcell.ColorBlack)
+	stairsStyle := tcell.StyleDefault.Foreground(tcell.ColorYellow).Background(tcell.ColorBlack)
+	dimStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkGray).Background(tcell.ColorBlack)
 
 	// Status line at top
 	depth := 0
@@ -134,9 +140,44 @@ func (g *Game) render() {
 	status := fmt.Sprintf(" Depth: %d | Corruption: %.0f%% ", depth, g.Corruption*100)
 	g.drawString(0, 0, status, hudStyle)
 
+	// Mini-map (top-right, offset below status line)
+	if g.Floor != nil && g.GameMap != nil && g.Player != nil {
+		cellX, cellY := playerCell(g.Player)
+		lines := buildMiniMap(g.GameMap, cellX, cellY, g.Floor.StairsPos.X, g.Floor.StairsPos.Y, defaultMiniMapRadius)
+		if len(lines) > 0 {
+			mapH := len(lines)
+			mapW := len([]rune(lines[0]))
+			startX := g.Width - mapW
+			startY := 1
+			if startX < 0 {
+				startX = 0
+			}
+			if startY+mapH < g.Height {
+				for y := 0; y < mapH; y++ {
+					for x, r := range []rune(lines[y]) {
+						style := dimStyle
+						switch r {
+						case '#':
+							style = hudStyle
+						case '@':
+							style = playerStyle
+						case render.StairsChar:
+							style = stairsStyle
+						}
+						g.Screen.SetContent(startX+x, startY+y, r, nil, style)
+					}
+				}
+			}
+		}
+	}
+
 	// Controls at bottom
 	controls := " W/S: Move | A/D: Turn | Q: Quit "
 	g.drawString(0, g.Height-1, controls, hudStyle)
+
+	if g.Hint != "" && g.Height >= 2 {
+		g.drawString(0, g.Height-2, " "+g.Hint+" ", stairsStyle)
+	}
 }
 
 // drawString is a helper to draw a string at x,y
