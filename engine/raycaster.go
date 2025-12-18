@@ -3,8 +3,13 @@ package engine
 import (
 	"math"
 
-	"github.com/gdamore/tcell/v2"
 	"game/render"
+	"github.com/gdamore/tcell/v2"
+)
+
+const (
+	stairsMinSpriteHeight = 1
+	stairsMaxSpriteHeight = 9
 )
 
 // Raycaster handles the 3D raycasting rendering
@@ -30,6 +35,7 @@ func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap
 	wallStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 	ceilingStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkBlue)
 	floorStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkGray)
+	stairsStyle := tcell.StyleDefault.Foreground(tcell.ColorYellow)
 
 	// Cast a ray for each column
 	for x := 0; x < r.ScreenWidth; x++ {
@@ -38,11 +44,10 @@ func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap
 		rayOffset := (float64(x)/float64(r.ScreenWidth) - 0.5) * r.FOV
 		rayAngle := player.Angle + rayOffset
 
-		// Cast ray and get perpendicular distance
-		dist := r.castRay(player, gameMap, rayAngle)
+		wallDist, stairsDist := r.castRayWithStairs(player, gameMap, rayAngle)
 
 		// Fix fish-eye: use perpendicular distance
-		perpDist := dist * math.Cos(rayOffset)
+		perpDist := wallDist * math.Cos(rayOffset)
 
 		// Calculate wall height on screen
 		var wallHeight int
@@ -82,11 +87,49 @@ func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap
 				screen.SetContent(x, y, floorChar, nil, floorStyle)
 			}
 		}
+
+		if stairsDist < wallDist && stairsDist < r.MaxDist {
+			perpStairsDist := stairsDist * math.Cos(rayOffset)
+			stairsHeight := stairsSpriteHeight(r.ScreenHeight, perpStairsDist)
+			stairsY := r.ScreenHeight / 2
+			startY := stairsY - stairsHeight/2
+			endY := startY + stairsHeight
+			if startY < 0 {
+				startY = 0
+			}
+			if endY > r.ScreenHeight {
+				endY = r.ScreenHeight
+			}
+			for y := startY; y < endY; y++ {
+				screen.SetContent(x, y, render.StairsChar, nil, stairsStyle)
+			}
+		}
 	}
 }
 
 // castRay uses DDA algorithm to find wall distance
 func (r *Raycaster) castRay(player *Player, gameMap *GameMap, rayAngle float64) float64 {
+	wallDist, _ := r.castRayWithStairs(player, gameMap, rayAngle)
+	return wallDist
+}
+
+func stairsSpriteHeight(screenHeight int, perpDist float64) int {
+	if perpDist <= 0 {
+		return stairsMaxSpriteHeight
+	}
+	h := int(float64(screenHeight) / (perpDist * 2.0))
+	if h < stairsMinSpriteHeight {
+		return stairsMinSpriteHeight
+	}
+	if h > stairsMaxSpriteHeight {
+		return stairsMaxSpriteHeight
+	}
+	return h
+}
+
+// castRayWithStairs uses DDA algorithm to find the wall distance while also tracking
+// the nearest stairs tile encountered before the wall hit.
+func (r *Raycaster) castRayWithStairs(player *Player, gameMap *GameMap, rayAngle float64) (wallDist, stairsDist float64) {
 	// Ray direction
 	rayDirX := math.Cos(rayAngle)
 	rayDirY := math.Sin(rayAngle)
@@ -124,6 +167,7 @@ func (r *Raycaster) castRay(player *Player, gameMap *GameMap, rayAngle float64) 
 	// Perform DDA
 	var side int // 0 for x-side, 1 for y-side
 	hit := false
+	stairsDist = math.Inf(1)
 
 	for !hit {
 		// Jump to next map square
@@ -137,6 +181,16 @@ func (r *Raycaster) castRay(player *Player, gameMap *GameMap, rayAngle float64) 
 			side = 1
 		}
 
+		if gameMap.GetCell(mapX, mapY) == CellStairs {
+			dist := sideDistX - deltaDistX
+			if side == 1 {
+				dist = sideDistY - deltaDistY
+			}
+			if dist < stairsDist {
+				stairsDist = dist
+			}
+		}
+
 		// Check if ray hit a wall
 		if gameMap.IsWall(mapX, mapY) {
 			hit = true
@@ -144,19 +198,18 @@ func (r *Raycaster) castRay(player *Player, gameMap *GameMap, rayAngle float64) 
 
 		// Safety: limit ray distance
 		if sideDistX > r.MaxDist && sideDistY > r.MaxDist {
-			return r.MaxDist
+			return r.MaxDist, stairsDist
 		}
 	}
 
 	// Calculate distance to wall
-	var perpWallDist float64
 	if side == 0 {
-		perpWallDist = sideDistX - deltaDistX
+		wallDist = sideDistX - deltaDistX
 	} else {
-		perpWallDist = sideDistY - deltaDistY
+		wallDist = sideDistY - deltaDistY
 	}
 
-	return perpWallDist
+	return wallDist, stairsDist
 }
 
 // SetScreenSize updates the screen dimensions

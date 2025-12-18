@@ -18,6 +18,12 @@ func NewPlayerAtCell(cellX, cellY int, angle float64) *Player {
 	return NewPlayer(float64(cellX)+0.5, float64(cellY)+0.5, angle)
 }
 
+// SetCell centers the player in the given map cell.
+func (p *Player) SetCell(cellX, cellY int) {
+	p.X = float64(cellX) + 0.5
+	p.Y = float64(cellY) + 0.5
+}
+
 // DirX returns the X component of the direction vector
 func (p *Player) DirX() float64 {
 	return math.Cos(p.Angle)

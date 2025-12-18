@@ -21,6 +21,34 @@ func TestRaycasterCastRay(t *testing.T) {
 	}
 }
 
+func TestRaycasterCastRayWithStairsTracksNearestStairsBeforeWall(t *testing.T) {
+	r := NewRaycaster(120, 40)
+	m := &GameMap{
+		Width:  5,
+		Height: 5,
+		Cells: [][]int{
+			{CellWall, CellWall, CellWall, CellWall, CellWall},
+			{CellWall, CellEmpty, CellEmpty, CellEmpty, CellWall},
+			{CellWall, CellEmpty, CellEmpty, CellStairs, CellWall},
+			{CellWall, CellEmpty, CellEmpty, CellEmpty, CellWall},
+			{CellWall, CellWall, CellWall, CellWall, CellWall},
+		},
+	}
+
+	p := NewPlayer(1.5, 2.5, 0) // facing east
+	wallDist, stairsDist := r.castRayWithStairs(p, m, 0)
+
+	if wallDist <= 0 {
+		t.Fatalf("expected wallDist > 0, got %f", wallDist)
+	}
+	if !(stairsDist > 0) {
+		t.Fatalf("expected stairsDist > 0, got %f", stairsDist)
+	}
+	if stairsDist >= wallDist {
+		t.Fatalf("expected stairsDist < wallDist, got stairs=%f wall=%f", stairsDist, wallDist)
+	}
+}
+
 func TestRaycasterFishEyeCorrection(t *testing.T) {
 	r := NewRaycaster(120, 40)
 	m := NewTestMap()

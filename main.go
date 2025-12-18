@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"time"
 
 	"game/engine"
+	"game/render"
+	"game/world"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -16,29 +19,34 @@ type Game struct {
 	Running      bool
 	Width        int
 	Height       int
-	CurrentFloor int
 	Corruption   float64
+	Hint         string
 	events       chan tcell.Event
 	Player       *engine.Player
 	GameMap      *engine.GameMap
 	Raycaster    *engine.Raycaster
+	FloorManager *world.FloorManager
+	Floor        *world.Floor
 }
 
 func NewGame(screen tcell.Screen) *Game {
 	w, h := screen.Size()
+	floorManager := world.NewFloorManager()
+	floor := floorManager.GenerateFirstFloor()
 	g := &Game{
 		Screen:       screen,
 		Running:      true,
 		Width:        w,
 		Height:       h,
-		CurrentFloor: 1,
 		Corruption:   0.0,
 		events:       make(chan tcell.Event, 10),
-		GameMap:      engine.NewTestMap(),
+		GameMap:      floor.Map,
 		Raycaster:    engine.NewRaycaster(w, h),
+		FloorManager: floorManager,
+		Floor:        floor,
 	}
-	// Start player in open area of test map (position 8, 8 facing north)
-	g.Player = engine.NewPlayer(8.5, 8.5, -3.14159/2) // facing north (up)
+	// Start player at floor spawn (facing north).
+	g.Player = engine.NewPlayerAtCell(floor.SpawnPos.X, floor.SpawnPos.Y, -math.Pi/2)
 	// Start event polling goroutine
 	go g.pollEvents()
 	return g
@@ -97,11 +105,18 @@ func (g *Game) processEvent(ev tcell.Event) {
 
 // update processes game state changes
 func (g *Game) update() {
-	// Placeholder for game logic:
-	// - Player movement
-	// - Corruption increase
-	// - Floor transitions
-	// - Watcher spawning
+	if g.FloorManager == nil || g.Floor == nil || g.GameMap == nil || g.Player == nil {
+		return
+	}
+
+	cellX, cellY := playerCell(g.Player)
+
+	g.Hint = stairsHint(cellX, cellY, g.Floor.StairsPos.X, g.Floor.StairsPos.Y)
+	if g.GameMap.GetCell(cellX, cellY) == engine.CellStairs {
+		g.Floor = g.FloorManager.DescendToNextFloor()
+		g.GameMap = g.Floor.Map
+		g.Player.SetCell(g.Floor.SpawnPos.X, g.Floor.SpawnPos.Y)
+	}
 }
 
 // render draws the current game state to screen
@@ -113,14 +128,56 @@ func (g *Game) render() {
 
 	// HUD overlay
 	hudStyle := tcell.StyleDefault.Foreground(tcell.ColorGreen).Background(tcell.ColorBlack)
+	playerStyle := tcell.StyleDefault.Foreground(tcell.ColorAqua).Background(tcell.ColorBlack)
+	stairsStyle := tcell.StyleDefault.Foreground(tcell.ColorYellow).Background(tcell.ColorBlack)
+	dimStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkGray).Background(tcell.ColorBlack)
 
 	// Status line at top
-	status := fmt.Sprintf(" Floor: %d | Corruption: %.0f%% ", g.CurrentFloor, g.Corruption*100)
+	depth := 0
+	if g.Floor != nil {
+		depth = g.Floor.Depth
+	}
+	status := fmt.Sprintf(" Depth: %d | Corruption: %.0f%% ", depth, g.Corruption*100)
 	g.drawString(0, 0, status, hudStyle)
+
+	// Mini-map (top-right, offset below status line)
+	if g.Floor != nil && g.GameMap != nil && g.Player != nil {
+		cellX, cellY := playerCell(g.Player)
+		lines := buildMiniMap(g.GameMap, cellX, cellY, g.Floor.StairsPos.X, g.Floor.StairsPos.Y, defaultMiniMapRadius)
+		if len(lines) > 0 {
+			mapH := len(lines)
+			mapW := len([]rune(lines[0]))
+			startX := g.Width - mapW
+			startY := 1
+			if startX < 0 {
+				startX = 0
+			}
+			if startY+mapH < g.Height {
+				for y := 0; y < mapH; y++ {
+					for x, r := range []rune(lines[y]) {
+						style := dimStyle
+						switch r {
+						case '#':
+							style = hudStyle
+						case '@':
+							style = playerStyle
+						case render.StairsChar:
+							style = stairsStyle
+						}
+						g.Screen.SetContent(startX+x, startY+y, r, nil, style)
+					}
+				}
+			}
+		}
+	}
 
 	// Controls at bottom
 	controls := " W/S: Move | A/D: Turn | Q: Quit "
 	g.drawString(0, g.Height-1, controls, hudStyle)
+
+	if g.Hint != "" && g.Height >= 2 {
+		g.drawString(0, g.Height-2, " "+g.Hint+" ", stairsStyle)
+	}
 }
 
 // drawString is a helper to draw a string at x,y

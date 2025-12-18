@@ -15,6 +15,14 @@ func TestNewPlayerAtCell(t *testing.T) {
 	}
 }
 
+func TestPlayerSetCell(t *testing.T) {
+	p := NewPlayer(0, 0, 0)
+	p.SetCell(2, 7)
+	if p.X != 2.5 || p.Y != 7.5 {
+		t.Errorf("expected centered position (2.5,7.5), got (%f,%f)", p.X, p.Y)
+	}
+}
+
 func TestPlayerRotateLeftRight(t *testing.T) {
 	p := NewPlayer(0, 0, 0)
 

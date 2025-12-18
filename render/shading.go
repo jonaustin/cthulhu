@@ -26,6 +26,9 @@ func GetShade(distance, maxDist float64) rune {
 // CeilingChar is the character used for ceiling
 const CeilingChar = ' '
 
+// StairsChar is the character used to indicate stairs in overlays/sprites.
+const StairsChar = 'v'
+
 // FloorChars are characters for floor rendering (closer = denser)
 var FloorChars = []rune{'.', ':', ';', ' '}
 
