@@ -79,13 +79,13 @@ func (g *Game) processEvent(ev tcell.Event) {
 			case 'q', 'Q':
 				g.Running = false
 			case 'w', 'W':
-				// Move forward (placeholder)
+				g.Player.MoveForward(g.GameMap)
 			case 's', 'S':
-				// Move backward (placeholder)
+				g.Player.MoveBackward(g.GameMap)
 			case 'a', 'A':
-				// Rotate left (placeholder)
+				g.Player.RotateLeft()
 			case 'd', 'D':
-				// Rotate right (placeholder)
+				g.Player.RotateRight()
 			}
 		}
 	case *tcell.EventResize:

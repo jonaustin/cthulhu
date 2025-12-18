@@ -1,6 +1,9 @@
 # Binary
 /game
 
+# Local build/test caches
+.cache/
+
 # IDE
 .idea/
 *.swp
