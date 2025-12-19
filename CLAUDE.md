@@ -84,9 +84,9 @@ go test -v -cover ./...
 
 **Never:**
 
-- ❌ Write code without a bd issue
-- ❌ Commit directly to main branch
-- ❌ Skip pull requests
+- ❌ Write code without a bd issue; except when closing a bd issue
+- ❌ Commit directly to main branch; except when closing a bd issue
+- ❌ Skip pull requests; except when closing a bd issue
 - ❌ Reuse branches across multiple issues
 - ❌ Close a bd issue before its PR is merged to main
 

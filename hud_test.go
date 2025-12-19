@@ -43,3 +43,34 @@ func TestBuildMiniMapMarksPlayerAndStairs(t *testing.T) {
 		t.Fatalf("expected stairs %q at center-right, got %q", render.StairsChar, lines[1][2])
 	}
 }
+
+func TestBuildMiniMapRectRespectsDifferentRadii(t *testing.T) {
+	m := &engine.GameMap{
+		Width:  5,
+		Height: 5,
+		Cells: [][]int{
+			{engine.CellWall, engine.CellWall, engine.CellWall, engine.CellWall, engine.CellWall},
+			{engine.CellWall, engine.CellEmpty, engine.CellEmpty, engine.CellEmpty, engine.CellWall},
+			{engine.CellWall, engine.CellEmpty, engine.CellEmpty, engine.CellStairs, engine.CellWall},
+			{engine.CellWall, engine.CellEmpty, engine.CellEmpty, engine.CellEmpty, engine.CellWall},
+			{engine.CellWall, engine.CellWall, engine.CellWall, engine.CellWall, engine.CellWall},
+		},
+	}
+
+	lines := buildMiniMapRect(m, 2, 2, 3, 2, 2, 1) // 5 wide, 3 tall
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 lines, got %d", len(lines))
+	}
+	if got := len([]rune(lines[0])); got != 5 {
+		t.Fatalf("expected width 5, got %d", got)
+	}
+}
+
+func TestMiniMapStartXLeavesRightMargin(t *testing.T) {
+	if got := miniMapStartX(80, 10); got != 69 {
+		t.Fatalf("expected startX 69, got %d", got)
+	}
+	if got := miniMapStartX(5, 10); got != 0 {
+		t.Fatalf("expected startX clamped to 0, got %d", got)
+	}
+}

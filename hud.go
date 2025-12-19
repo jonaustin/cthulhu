@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	defaultMiniMapRadius = 6
-	stairsHintRadius     = 4
+	defaultMiniMapRadius  = 6
+	stairsHintRadius      = 4
+	miniMapRightMargin    = 1
+	miniMapHorizontalMul  = 2
+	defaultMiniMapRadiusX = defaultMiniMapRadius * miniMapHorizontalMul
 )
 
 func absInt(v int) int {
@@ -17,6 +20,14 @@ func absInt(v int) int {
 		return -v
 	}
 	return v
+}
+
+func miniMapStartX(screenW, mapW int) int {
+	startX := screenW - mapW - miniMapRightMargin
+	if startX < 0 {
+		return 0
+	}
+	return startX
 }
 
 func stairsHint(playerCellX, playerCellY, stairsX, stairsY int) string {
@@ -30,17 +41,17 @@ func stairsHint(playerCellX, playerCellY, stairsX, stairsY int) string {
 	return ""
 }
 
-func buildMiniMap(gameMap *engine.GameMap, playerCellX, playerCellY, stairsX, stairsY, radius int) []string {
-	if gameMap == nil || radius < 0 {
+func buildMiniMapRect(gameMap *engine.GameMap, playerCellX, playerCellY, stairsX, stairsY, radiusX, radiusY int) []string {
+	if gameMap == nil || radiusX < 0 || radiusY < 0 {
 		return nil
 	}
 
-	size := radius*2 + 1
-	lines := make([]string, 0, size)
+	sizeY := radiusY*2 + 1
+	lines := make([]string, 0, sizeY)
 
-	for dy := -radius; dy <= radius; dy++ {
-		row := make([]rune, 0, size)
-		for dx := -radius; dx <= radius; dx++ {
+	for dy := -radiusY; dy <= radiusY; dy++ {
+		row := make([]rune, 0, radiusX*2+1)
+		for dx := -radiusX; dx <= radiusX; dx++ {
 			x := playerCellX + dx
 			y := playerCellY + dy
 
@@ -70,6 +81,10 @@ func buildMiniMap(gameMap *engine.GameMap, playerCellX, playerCellY, stairsX, st
 	}
 
 	return lines
+}
+
+func buildMiniMap(gameMap *engine.GameMap, playerCellX, playerCellY, stairsX, stairsY, radius int) []string {
+	return buildMiniMapRect(gameMap, playerCellX, playerCellY, stairsX, stairsY, radius, radius)
 }
 
 func playerCell(p *engine.Player) (int, int) {
