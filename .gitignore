@@ -3,6 +3,7 @@
 
 # Local build/test caches
 .cache/
+snapshots/
 
 # IDE
 .idea/
