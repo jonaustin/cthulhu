@@ -1,6 +1,7 @@
 package render
 
 import (
+	"math"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -61,12 +62,14 @@ func ApplyCharGlitchAt(char rune, ctx EffectsContext, x, y int) rune {
 	}
 
 	cfg := GetVisualConfig()
+	ctxBlink := ctx
+	ctxBlink.Ticks = ctx.Ticks / blinkTicksFor(ctx.Corruption, cfg.GlitchBlinkMaxTicks)
 	p := clamp01(ctx.Corruption) * cfg.MaxCharGlitchChance * cfg.VisualScale
-	if !chance01(cellNoise(ctx, x, y, 0xA11CE), p) {
+	if !chance01(cellNoise(ctxBlink, x, y, 0xA11CE), p) {
 		return char
 	}
 
-	return glitchChars[pickIndex(cellNoise(ctx, x, y, 0xC0FFEE), len(glitchChars))]
+	return glitchChars[pickIndex(cellNoise(ctxBlink, x, y, 0xC0FFEE), len(glitchChars))]
 }
 
 // ApplyColorBleed occasionally shifts the wall color.
@@ -88,12 +91,14 @@ func ApplyColorBleedAt(style tcell.Style, ctx EffectsContext, x, y int) tcell.St
 	}
 
 	cfg := GetVisualConfig()
+	ctxBlink := ctx
+	ctxBlink.Ticks = ctx.Ticks / blinkTicksFor(ctx.Corruption, cfg.BleedBlinkMaxTicks)
 	p := clamp01(ctx.Corruption) * cfg.MaxColorBleedChance * cfg.VisualScale
-	if !chance01(cellNoise(ctx, x, y, 0xB1EED), p) {
+	if !chance01(cellNoise(ctxBlink, x, y, 0xB1EED), p) {
 		return style
 	}
 
-	return style.Foreground(corruptColors[pickIndex(cellNoise(ctx, x, y, 0xD15EA5E), len(corruptColors))])
+	return style.Foreground(corruptColors[pickIndex(cellNoise(ctxBlink, x, y, 0xD15EA5E), len(corruptColors))])
 }
 
 func RenderWhisper(screen tcell.Screen, corruption float64) {
@@ -215,6 +220,20 @@ func clamp01(v float64) float64 {
 		return 1
 	}
 	return v
+}
+
+func blinkTicksFor(corruption float64, maxTicks int) int {
+	if maxTicks <= 1 {
+		return 1
+	}
+	c := clamp01(corruption)
+	if c <= 0 {
+		return maxTicks
+	}
+	if c >= 1 {
+		return 1
+	}
+	return int(math.Round(float64(maxTicks) - c*float64(maxTicks-1)))
 }
 
 func cellNoise(ctx EffectsContext, x, y int, salt uint64) uint64 {

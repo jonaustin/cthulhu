@@ -62,6 +62,8 @@ func TestVisualConfigClamp(t *testing.T) {
 		WhisperWindowTicks:   -10,
 		MaxWhisperPerWindow:  2.0,
 		MaxFakeGeometryCells: -5,
+		GlitchBlinkMaxTicks:  -2,
+		BleedBlinkMaxTicks:   999,
 	})
 
 	cfg := GetVisualConfig()
@@ -82,5 +84,11 @@ func TestVisualConfigClamp(t *testing.T) {
 	}
 	if cfg.MaxFakeGeometryCells != maxFakeGeoCellsMin {
 		t.Fatalf("expected fake geometry cells clamped to %d, got %d", maxFakeGeoCellsMin, cfg.MaxFakeGeometryCells)
+	}
+	if cfg.GlitchBlinkMaxTicks != blinkMaxTicksMin {
+		t.Fatalf("expected glitch blink clamped to %d, got %d", blinkMaxTicksMin, cfg.GlitchBlinkMaxTicks)
+	}
+	if cfg.BleedBlinkMaxTicks != blinkMaxTicksMax {
+		t.Fatalf("expected bleed blink clamped to %d, got %d", blinkMaxTicksMax, cfg.BleedBlinkMaxTicks)
 	}
 }

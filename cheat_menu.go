@@ -27,7 +27,9 @@ const (
 const (
 	tuneVisualScale = iota
 	tuneCharGlitchChance
+	tuneCharGlitchBlinkMax
 	tuneColorBleedChance
+	tuneColorBleedBlinkMax
 	tuneWhisperWindowTicks
 	tuneWhisperMaxPerWindow
 	tuneFakeGeoMaxCells
@@ -38,6 +40,7 @@ const (
 const (
 	tuneVisualScaleStep     = 0.05
 	tuneChanceStep          = 0.01
+	tuneBlinkTicksStep      = 5
 	tuneWhisperWindowStep   = 5
 	tuneWhisperMaxStep      = 0.02
 	tuneFakeGeoMaxCellsStep = 1
@@ -321,7 +324,9 @@ func (g *Game) tuneMenuLines() []string {
 		"Use Up/Down to select, Left/Right to adjust",
 		formatTuneLine(tuneVisualScale, g.cheatTuneIndex, fmt.Sprintf("Visual scale: %.2f", cfg.VisualScale)),
 		formatTuneLine(tuneCharGlitchChance, g.cheatTuneIndex, fmt.Sprintf("Char glitch max: %.2f", cfg.MaxCharGlitchChance)),
+		formatTuneLine(tuneCharGlitchBlinkMax, g.cheatTuneIndex, fmt.Sprintf("Char glitch blink max: %d", cfg.GlitchBlinkMaxTicks)),
 		formatTuneLine(tuneColorBleedChance, g.cheatTuneIndex, fmt.Sprintf("Color bleed max: %.2f", cfg.MaxColorBleedChance)),
+		formatTuneLine(tuneColorBleedBlinkMax, g.cheatTuneIndex, fmt.Sprintf("Color bleed blink max: %d", cfg.BleedBlinkMaxTicks)),
 		formatTuneLine(tuneWhisperWindowTicks, g.cheatTuneIndex, fmt.Sprintf("Whisper window ticks: %d", cfg.WhisperWindowTicks)),
 		formatTuneLine(tuneWhisperMaxPerWindow, g.cheatTuneIndex, fmt.Sprintf("Whisper max/window: %.2f", cfg.MaxWhisperPerWindow)),
 		formatTuneLine(tuneFakeGeoMaxCells, g.cheatTuneIndex, fmt.Sprintf("Fake geo max cells: %d", cfg.MaxFakeGeometryCells)),
@@ -373,8 +378,12 @@ func (g *Game) adjustTuneValue(delta int) {
 		cfg.VisualScale += float64(delta) * tuneVisualScaleStep
 	case tuneCharGlitchChance:
 		cfg.MaxCharGlitchChance += float64(delta) * tuneChanceStep
+	case tuneCharGlitchBlinkMax:
+		cfg.GlitchBlinkMaxTicks += delta * tuneBlinkTicksStep
 	case tuneColorBleedChance:
 		cfg.MaxColorBleedChance += float64(delta) * tuneChanceStep
+	case tuneColorBleedBlinkMax:
+		cfg.BleedBlinkMaxTicks += delta * tuneBlinkTicksStep
 	case tuneWhisperWindowTicks:
 		cfg.WhisperWindowTicks += delta * tuneWhisperWindowStep
 	case tuneWhisperMaxPerWindow:

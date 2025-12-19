@@ -7,6 +7,8 @@ const (
 	defaultMaxWhisperPerWindow   = 0.12
 	defaultMaxFakeGeometryCells  = 24
 	defaultCorruptionVisualScale = 0.5
+	defaultGlitchBlinkMaxTicks   = 24
+	defaultBleedBlinkMaxTicks    = 18
 )
 
 const (
@@ -21,6 +23,9 @@ const (
 
 	maxFakeGeoCellsMin = 0
 	maxFakeGeoCellsMax = 200
+
+	blinkMaxTicksMin = 1
+	blinkMaxTicksMax = 120
 )
 
 // VisualConfig controls corruption visuals at runtime.
@@ -31,6 +36,8 @@ type VisualConfig struct {
 	WhisperWindowTicks   int
 	MaxWhisperPerWindow  float64
 	MaxFakeGeometryCells int
+	GlitchBlinkMaxTicks  int
+	BleedBlinkMaxTicks   int
 }
 
 var defaultVisualConfig = VisualConfig{
@@ -40,6 +47,8 @@ var defaultVisualConfig = VisualConfig{
 	WhisperWindowTicks:   defaultWhisperWindowTicks,
 	MaxWhisperPerWindow:  defaultMaxWhisperPerWindow,
 	MaxFakeGeometryCells: defaultMaxFakeGeometryCells,
+	GlitchBlinkMaxTicks:  defaultGlitchBlinkMaxTicks,
+	BleedBlinkMaxTicks:   defaultBleedBlinkMaxTicks,
 }
 
 var visualConfig = defaultVisualConfig
@@ -66,6 +75,8 @@ func sanitizeVisualConfig(cfg VisualConfig) VisualConfig {
 	cfg.MaxWhisperPerWindow = clampFloat(cfg.MaxWhisperPerWindow, chanceMin, chanceMax)
 	cfg.WhisperWindowTicks = clampInt(cfg.WhisperWindowTicks, whisperWindowMin, whisperWindowMax)
 	cfg.MaxFakeGeometryCells = clampInt(cfg.MaxFakeGeometryCells, maxFakeGeoCellsMin, maxFakeGeoCellsMax)
+	cfg.GlitchBlinkMaxTicks = clampInt(cfg.GlitchBlinkMaxTicks, blinkMaxTicksMin, blinkMaxTicksMax)
+	cfg.BleedBlinkMaxTicks = clampInt(cfg.BleedBlinkMaxTicks, blinkMaxTicksMin, blinkMaxTicksMax)
 	return cfg
 }
 
