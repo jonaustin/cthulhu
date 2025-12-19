@@ -103,6 +103,23 @@ func TestCheatMenuTuneAdjustsVisualConfig(t *testing.T) {
 	}
 }
 
+func TestCheatMenuTuneAdjustsBias(t *testing.T) {
+	g := newTestGameForCheats(t)
+	g.openCheatMenu()
+
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRune, 'v', tcell.ModNone))
+	for i := 0; i < tuneParamCount-1; i++ {
+		g.handleCheatEvent(tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone))
+	}
+
+	before := g.CorruptState.GetBias()
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone))
+	after := g.CorruptState.GetBias()
+	if after <= before {
+		t.Fatalf("expected bias to increase, got %f <= %f", after, before)
+	}
+}
+
 func TestCheatMenuAdjustCorruptionBias(t *testing.T) {
 	g := newTestGameForCheats(t)
 	g.openCheatMenu()

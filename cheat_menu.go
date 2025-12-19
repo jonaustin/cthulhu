@@ -31,6 +31,7 @@ const (
 	tuneWhisperWindowTicks
 	tuneWhisperMaxPerWindow
 	tuneFakeGeoMaxCells
+	tuneCorruptionBias
 	tuneParamCount
 )
 
@@ -40,6 +41,7 @@ const (
 	tuneWhisperWindowStep   = 5
 	tuneWhisperMaxStep      = 0.02
 	tuneFakeGeoMaxCellsStep = 1
+	tuneBiasStep            = 0.05
 )
 
 func (g *Game) handleCheatEvent(ev *tcell.EventKey) bool {
@@ -323,6 +325,7 @@ func (g *Game) tuneMenuLines() []string {
 		formatTuneLine(tuneWhisperWindowTicks, g.cheatTuneIndex, fmt.Sprintf("Whisper window ticks: %d", cfg.WhisperWindowTicks)),
 		formatTuneLine(tuneWhisperMaxPerWindow, g.cheatTuneIndex, fmt.Sprintf("Whisper max/window: %.2f", cfg.MaxWhisperPerWindow)),
 		formatTuneLine(tuneFakeGeoMaxCells, g.cheatTuneIndex, fmt.Sprintf("Fake geo max cells: %d", cfg.MaxFakeGeometryCells)),
+		formatTuneLine(tuneCorruptionBias, g.cheatTuneIndex, fmt.Sprintf("Corruption bias: %.0f%%", g.corruptionBiasPct())),
 		"Esc: Back",
 	}
 
@@ -378,7 +381,18 @@ func (g *Game) adjustTuneValue(delta int) {
 		cfg.MaxWhisperPerWindow += float64(delta) * tuneWhisperMaxStep
 	case tuneFakeGeoMaxCells:
 		cfg.MaxFakeGeometryCells += delta * tuneFakeGeoMaxCellsStep
+	case tuneCorruptionBias:
+		if g.CorruptState != nil {
+			g.CorruptState.AdjustBias(float64(delta) * tuneBiasStep)
+		}
 	}
 
 	render.SetVisualConfig(cfg)
+}
+
+func (g *Game) corruptionBiasPct() float64 {
+	if g == nil || g.CorruptState == nil {
+		return 0
+	}
+	return g.CorruptState.GetBias() * 100
 }
