@@ -23,6 +23,9 @@ func TestFloorManagerGenerateFirstFloor(t *testing.T) {
 	if floor.Map.GetCell(floor.StairsPos.X, floor.StairsPos.Y) != engine.CellStairs {
 		t.Fatalf("stairs not present at %+v", floor.StairsPos)
 	}
+	if floor.Watchers == nil {
+		t.Fatal("expected watchers manager initialized")
+	}
 	if fm.GetCurrentDepth() != 1 {
 		t.Fatalf("expected GetCurrentDepth()=1, got %d", fm.GetCurrentDepth())
 	}

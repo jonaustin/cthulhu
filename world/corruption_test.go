@@ -81,3 +81,18 @@ func TestCorruptionBiasAdjustsGetLevel(t *testing.T) {
 		t.Fatalf("expected bias clamped to 1.0, got %f", got)
 	}
 }
+
+func TestCorruptionExposureAddsToLevel(t *testing.T) {
+	c := NewCorruption()
+	c.Update(1)
+
+	c.AddExposure(0.2)
+	if got := c.GetLevel(); math.Abs(got-0.2) > 1e-9 {
+		t.Fatalf("expected level 0.2 after exposure, got %f", got)
+	}
+
+	c.AddExposure(1.0)
+	if got := c.GetLevel(); got != 1.0 {
+		t.Fatalf("expected level clamped to 1.0, got %f", got)
+	}
+}

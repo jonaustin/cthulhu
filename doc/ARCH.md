@@ -65,6 +65,9 @@ Each floor generated fresh using:
 │   ├── raycaster.go  # Raycasting math and 3D rendering
 │   ├── player.go     # Player state and movement
 │   └── map.go        # Map representation (2D grid)
+├── entities/
+│   ├── watcher.go    # Watcher entity definitions
+│   └── watcher_manager.go # Watcher spawning + drift
 ├── world/
 │   ├── generator.go  # Procedural floor generation (drunk walk)
 │   ├── floor.go      # Floor state and FloorManager
@@ -74,7 +77,7 @@ Each floor generated fresh using:
     └── effects.go    # Visual corruption effects (glitch, whispers, fake geo)
 ```
 
-**Note:** The `entities/` package (The Watchers) is not yet implemented.
+**Note:** The `entities/` package houses The Watchers (edge-of-vision entities).
 
 ## Game Loop
 ```
@@ -115,10 +118,10 @@ cleanup()
 6. ✅ HUD with depth, corruption %, controls, stairs hints
 7. ✅ Mini-map overlay (toggleable via cheat menu)
 8. ✅ Configurable floor size (`-fs WxH` flag)
-9. ✅ Comprehensive test coverage
+9. ✅ The Watchers (edge-of-vision presences)
+10. ✅ Comprehensive test coverage
 
 ### 🚧 Future Enhancements
-- The Watchers (non-interactive presences)
 - Smooth player movement (currently discrete)
 - Sound/audio hooks
 - Additional corruption effects

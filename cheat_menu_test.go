@@ -19,6 +19,7 @@ func newTestGameForCheats(t *testing.T) *Game {
 	return &Game{
 		Running:      true,
 		ShowMiniMap:  true,
+		ShowWatchers: true,
 		CorruptState: world.NewCorruption(),
 		FloorManager: fm,
 		Floor:        floor,
@@ -38,6 +39,25 @@ func TestCheatMenuToggleMap(t *testing.T) {
 	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRune, 'm', tcell.ModNone))
 	if g.ShowMiniMap {
 		t.Fatal("expected minimap toggled off")
+	}
+}
+
+func TestCheatMenuToggleWatchers(t *testing.T) {
+	g := newTestGameForCheats(t)
+	g.openCheatMenu()
+
+	if !g.ShowWatchers {
+		t.Fatal("expected watchers on by default")
+	}
+
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRune, 'w', tcell.ModNone))
+	if g.ShowWatchers {
+		t.Fatal("expected watchers toggled off")
+	}
+
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRune, 'w', tcell.ModNone))
+	if !g.ShowWatchers {
+		t.Fatal("expected watchers toggled on")
 	}
 }
 
