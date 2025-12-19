@@ -42,6 +42,13 @@ func TestWatcherManagerRanges(t *testing.T) {
 	wm := NewWatcherManager(20, 42, fov)
 
 	minEdge, maxEdge := edgeOffsetRange(fov)
+	expectedMin := (fov * 0.5) * (1.0 - WatcherEdgeThreshold)
+	if math.Abs(minEdge-expectedMin) > 1e-9 {
+		t.Fatalf("unexpected min edge: got %f, want %f", minEdge, expectedMin)
+	}
+	if math.Abs(maxEdge-(fov*0.5)) > 1e-9 {
+		t.Fatalf("unexpected max edge: got %f, want %f", maxEdge, fov*0.5)
+	}
 	for _, w := range wm.Watchers {
 		if w.Angle < minEdge || w.Angle > maxEdge {
 			t.Fatalf("angle out of range: got %f, want %f-%f", w.Angle, minEdge, maxEdge)

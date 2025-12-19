@@ -61,7 +61,7 @@ func edgeOffsetRange(fov float64) (float64, float64) {
 		fov = defaultFOV
 	}
 	half := fov * 0.5
-	min := half * (1.0 - 2.0*WatcherEdgeThreshold)
+	min := half * (1.0 - WatcherEdgeThreshold)
 	if min < 0 {
 		min = 0
 	}
