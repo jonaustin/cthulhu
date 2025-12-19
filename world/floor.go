@@ -16,17 +16,32 @@ type Floor struct {
 type FloorManager struct {
 	CurrentFloor *Floor
 	Generator    *FloorGenerator
+	MapWidth     int
+	MapHeight    int
 }
 
 const (
-	defaultMapWidth  = 32
-	defaultMapHeight = 32
+	DefaultMapWidth  = 32
+	DefaultMapHeight = 32
 )
 
 func NewFloorManager() *FloorManager {
+	return NewFloorManagerWithSize(DefaultMapWidth, DefaultMapHeight)
+}
+
+func NewFloorManagerWithSize(width, height int) *FloorManager {
+	if width <= 0 {
+		width = DefaultMapWidth
+	}
+	if height <= 0 {
+		height = DefaultMapHeight
+	}
+
 	baseSeed := time.Now().UnixNano()
 	return &FloorManager{
-		Generator: NewFloorGenerator(defaultMapWidth, defaultMapHeight, 1).WithSeed(baseSeed),
+		MapWidth:  width,
+		MapHeight: height,
+		Generator: NewFloorGenerator(width, height, 1).WithSeed(baseSeed),
 	}
 }
 
@@ -58,7 +73,15 @@ func (fm *FloorManager) GetCurrentDepth() int {
 
 func (fm *FloorManager) generateAtDepth(depth int) *Floor {
 	if fm.Generator == nil {
-		fm.Generator = NewFloorGenerator(defaultMapWidth, defaultMapHeight, depth)
+		w := fm.MapWidth
+		h := fm.MapHeight
+		if w <= 0 {
+			w = DefaultMapWidth
+		}
+		if h <= 0 {
+			h = DefaultMapHeight
+		}
+		fm.Generator = NewFloorGenerator(w, h, depth)
 	}
 
 	fm.Generator.Depth = depth

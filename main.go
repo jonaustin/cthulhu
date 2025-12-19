@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -37,9 +38,9 @@ type Game struct {
 	cheatMessage        string
 }
 
-func NewGame(screen tcell.Screen) *Game {
+func NewGame(screen tcell.Screen, floorWidth, floorHeight int) *Game {
 	w, h := screen.Size()
-	floorManager := world.NewFloorManager()
+	floorManager := world.NewFloorManagerWithSize(floorWidth, floorHeight)
 	floor := floorManager.GenerateFirstFloor()
 	g := &Game{
 		Screen:       screen,
@@ -222,6 +223,16 @@ func (g *Game) drawString(x, y int, str string, style tcell.Style) {
 }
 
 func main() {
+	fsDefault := fmt.Sprintf("%dx%d", world.DefaultMapWidth, world.DefaultMapHeight)
+	floorSizeFlag := flag.String("fs", fsDefault, "floor size WxH (e.g. 16x16)")
+	flag.Parse()
+
+	floorW, floorH, err := parseFloorSize(*floorSizeFlag)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid -fs %q: %v\n", *floorSizeFlag, err)
+		os.Exit(2)
+	}
+
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating screen: %v\n", err)
@@ -234,7 +245,7 @@ func main() {
 	}
 	defer screen.Fini()
 
-	game := NewGame(screen)
+	game := NewGame(screen, floorW, floorH)
 
 	// Main game loop - target ~60fps (16ms per frame)
 	frameDuration := time.Duration(16) * time.Millisecond

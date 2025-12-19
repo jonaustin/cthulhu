@@ -64,3 +64,13 @@ func TestFloorManagerTeleportToDepth(t *testing.T) {
 		t.Fatalf("expected depth clamped to 1, got %d", f1.Depth)
 	}
 }
+
+func TestFloorManagerWithSizeUsesRequestedDimensions(t *testing.T) {
+	fm := NewFloorManagerWithSize(16, 20)
+	fm.Generator.WithSeed(111)
+
+	f := fm.GenerateFirstFloor()
+	if f.Map.Width != 16 || f.Map.Height != 20 {
+		t.Fatalf("expected map 16x20, got %dx%d", f.Map.Width, f.Map.Height)
+	}
+}
