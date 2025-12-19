@@ -84,6 +84,8 @@ func (g *Game) handleCheatEvent(ev *tcell.EventKey) bool {
 		g.closeCheatMenu()
 	case 'm', 'M':
 		g.ShowMiniMap = !g.ShowMiniMap
+	case 'w', 'W':
+		g.ShowWatchers = !g.ShowWatchers
 	case 't', 'T':
 		g.cheatMode = cheatModeTeleport
 		g.cheatTeleportBuffer = g.cheatTeleportBuffer[:0]
@@ -239,6 +241,7 @@ func (g *Game) cheatMenuLines() []string {
 	lines := []string{
 		"CHEATS",
 		fmt.Sprintf("M: Toggle map (%s)", onOff(g.ShowMiniMap)),
+		fmt.Sprintf("W: Toggle watchers (%s)", onOff(g.ShowWatchers)),
 		"T: Teleport to floor",
 		fmt.Sprintf("+/-: Corruption bias (%.0f%%)", corruptionBiasPct),
 		"C/Esc: Close",

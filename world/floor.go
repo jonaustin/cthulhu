@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"game/engine"
+	"game/entities"
 )
 
 type Floor struct {
@@ -11,6 +12,7 @@ type Floor struct {
 	Depth     int
 	SpawnPos  Point
 	StairsPos Point
+	Watchers  *entities.WatcherManager
 }
 
 type FloorManager struct {
@@ -87,11 +89,13 @@ func (fm *FloorManager) generateAtDepth(depth int) *Floor {
 	fm.Generator.Depth = depth
 	m := fm.Generator.Generate()
 
+	watchers := entities.NewWatcherManager(depth, fm.Generator.Seed, engine.DefaultFOV)
 	f := &Floor{
 		Map:       m,
 		Depth:     depth,
 		SpawnPos:  fm.Generator.SpawnPos,
 		StairsPos: fm.Generator.StairsPos,
+		Watchers:  watchers,
 	}
 	fm.CurrentFloor = f
 	return f

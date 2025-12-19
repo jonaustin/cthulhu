@@ -177,9 +177,9 @@ go test -v -cover ./... # With coverage
 - ✅ HUD with depth, corruption %, controls, hints
 - ✅ Mini-map overlay (toggleable)
 - ✅ Cheat menu for testing
+- ✅ The Watchers (edge-of-vision presences)
 
 **Not Yet Implemented:**
-- The Watchers (non-interactive entities)
 - Smooth player movement
 - Sound/audio
 - Save/load system

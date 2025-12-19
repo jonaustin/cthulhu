@@ -3,6 +3,7 @@ package engine
 import (
 	"math"
 
+	"game/entities"
 	"game/render"
 	"github.com/gdamore/tcell/v2"
 )
@@ -10,6 +11,8 @@ import (
 const (
 	stairsMinSpriteHeight = 1
 	stairsMaxSpriteHeight = 9
+	DefaultFOV            = math.Pi / 3
+	DefaultMaxDist        = 16.0
 )
 
 // Raycaster handles the 3D raycasting rendering
@@ -25,22 +28,28 @@ func NewRaycaster(width, height int) *Raycaster {
 	return &Raycaster{
 		ScreenWidth:  width,
 		ScreenHeight: height,
-		FOV:          math.Pi / 3, // 60 degrees
-		MaxDist:      16.0,        // max view distance
+		FOV:          DefaultFOV,     // 60 degrees
+		MaxDist:      DefaultMaxDist, // max view distance
 	}
 }
 
 // Render draws the 3D view to the screen
 func (r *Raycaster) Render(screen tcell.Screen, player *Player, gameMap *GameMap) {
-	r.RenderWithEffects(screen, player, gameMap, render.EffectsContext{})
+	r.RenderWithEffects(screen, player, gameMap, render.EffectsContext{}, nil)
 }
 
 // RenderWithEffects draws the 3D view to the screen, applying deterministic corruption effects.
-func (r *Raycaster) RenderWithEffects(screen tcell.Screen, player *Player, gameMap *GameMap, effects render.EffectsContext) {
+func (r *Raycaster) RenderWithEffects(screen tcell.Screen, player *Player, gameMap *GameMap, effects render.EffectsContext, watchers *entities.WatcherManager) {
 	wallStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 	ceilingStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkBlue)
 	floorStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkGray)
 	stairsStyle := tcell.StyleDefault.Foreground(tcell.ColorYellow)
+	watcherStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkMagenta)
+
+	var watcherSprites []entities.WatcherSprite
+	if watchers != nil {
+		watcherSprites = watchers.Sprites(r.ScreenWidth, r.ScreenHeight)
+	}
 
 	// Cast a ray for each column
 	for x := 0; x < r.ScreenWidth; x++ {
@@ -110,6 +119,18 @@ func (r *Raycaster) RenderWithEffects(screen tcell.Screen, player *Player, gameM
 			for y := startY; y < endY; y++ {
 				st := render.ApplyColorBleedAt(stairsStyle, effects, x, y)
 				screen.SetContent(x, y, render.StairsChar, nil, st)
+			}
+		}
+
+		if len(watcherSprites) > 0 {
+			for _, sprite := range watcherSprites {
+				if sprite.Column != x {
+					continue
+				}
+				for y := sprite.StartY; y < sprite.EndY; y++ {
+					st := render.ApplyColorBleedAt(watcherStyle, effects, x, y)
+					screen.SetContent(x, y, sprite.Char, nil, st)
+				}
 			}
 		}
 	}

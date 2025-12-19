@@ -10,6 +10,8 @@ type Corruption struct {
 	Bias  float64 // additive override, -1.0 to 1.0 (clamped in GetLevel)
 	Depth int     // Current floor depth
 	Ticks int     // Frame counter for animation
+	// Exposure accumulates from passive effects like Watchers.
+	Exposure float64
 }
 
 func NewCorruption() *Corruption {
@@ -30,7 +32,7 @@ func (c *Corruption) GetLevel() float64 {
 	if c == nil {
 		return 0
 	}
-	return clamp01(c.Level + c.Bias)
+	return clamp01(c.Level + c.Bias + c.Exposure)
 }
 
 func (c *Corruption) GetBias() float64 {
@@ -45,6 +47,16 @@ func (c *Corruption) AdjustBias(delta float64) {
 		return
 	}
 	c.Bias = clampNeg1To1(c.Bias + delta)
+}
+
+func (c *Corruption) AddExposure(delta float64) {
+	if c == nil {
+		return
+	}
+	if delta <= 0 {
+		return
+	}
+	c.Exposure = clamp01(c.Exposure + delta)
 }
 
 // calculateLevel maps depth to a corruption value.

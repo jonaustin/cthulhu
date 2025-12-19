@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"game/engine"
+	"game/entities"
 	"game/render"
 	"game/world"
 
@@ -30,7 +31,8 @@ type Game struct {
 	FloorManager *world.FloorManager
 	Floor        *world.Floor
 
-	ShowMiniMap bool
+	ShowMiniMap  bool
+	ShowWatchers bool
 
 	cheatMenuOpen       bool
 	cheatMode           cheatMode
@@ -55,6 +57,7 @@ func NewGame(screen tcell.Screen, floorWidth, floorHeight int) *Game {
 		FloorManager: floorManager,
 		Floor:        floor,
 		ShowMiniMap:  true,
+		ShowWatchers: true,
 	}
 	// Start player at floor spawn (facing north).
 	g.Player = engine.NewPlayerAtCell(floor.SpawnPos.X, floor.SpawnPos.Y, -math.Pi/2)
@@ -132,11 +135,18 @@ func (g *Game) update() {
 		g.Player.SetCell(g.Floor.SpawnPos.X, g.Floor.SpawnPos.Y)
 	}
 
+	if g.Floor != nil && g.Floor.Watchers != nil {
+		g.Floor.Watchers.Update()
+	}
+
 	depth := 0
 	if g.Floor != nil {
 		depth = g.Floor.Depth
 	}
 	if g.CorruptState != nil {
+		if g.ShowWatchers && g.Floor != nil && g.Floor.Watchers != nil {
+			g.CorruptState.AddExposure(g.Floor.Watchers.CorruptionDelta())
+		}
 		g.CorruptState.Update(depth)
 		g.Corruption = g.CorruptState.GetLevel()
 	}
@@ -151,7 +161,11 @@ func (g *Game) render() {
 	if g.CorruptState != nil {
 		effects = render.NewEffectsContext(g.CorruptState.Depth, g.CorruptState.GetLevel(), g.CorruptState.Ticks)
 	}
-	g.Raycaster.RenderWithEffects(g.Screen, g.Player, g.GameMap, effects)
+	var watchers *entities.WatcherManager
+	if g.ShowWatchers && g.Floor != nil {
+		watchers = g.Floor.Watchers
+	}
+	g.Raycaster.RenderWithEffects(g.Screen, g.Player, g.GameMap, effects, watchers)
 
 	// Screen-space corruption overlays (below HUD).
 	render.RenderWhisperAt(g.Screen, effects, g.Width, g.Height)
