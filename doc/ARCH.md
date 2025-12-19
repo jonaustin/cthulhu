@@ -54,25 +54,27 @@ Each floor generated fresh using:
 ## File Structure
 ```
 /Users/jon/code/game/
-├── main.go           # Entry point, game loop
+├── main.go           # Entry point, game loop, event handling
+├── cheat_menu.go     # Debug/testing cheat menu (C key)
+├── hud.go            # HUD rendering, mini-map, stairs hints
+├── flags.go          # CLI flag parsing (floor size)
 ├── go.mod
 ├── doc/
 │   └── ARCH.md       # This file
 ├── engine/
-│   ├── raycaster.go  # Raycasting math and rendering
+│   ├── raycaster.go  # Raycasting math and 3D rendering
 │   ├── player.go     # Player state and movement
-│   └── map.go        # Map representation
+│   └── map.go        # Map representation (2D grid)
 ├── world/
-│   ├── generator.go  # Procedural floor generation
-│   ├── floor.go      # Floor state
-│   └── corruption.go # Corruption effects
-├── render/
-│   ├── terminal.go   # tcell abstraction
-│   ├── shading.go    # ASCII shading tables
-│   └── effects.go    # Visual corruption effects
-└── entities/
-    └── watcher.go    # The Watchers
+│   ├── generator.go  # Procedural floor generation (drunk walk)
+│   ├── floor.go      # Floor state and FloorManager
+│   └── corruption.go # Corruption level calculation
+└── render/
+    ├── shading.go    # ASCII shading tables (walls, floors)
+    └── effects.go    # Visual corruption effects (glitch, whispers, fake geo)
 ```
+
+**Note:** The `entities/` package (The Watchers) is not yet implemented.
 
 ## Game Loop
 ```
@@ -98,9 +100,26 @@ cleanup()
 - **Discrete movement** to start (smooth later)
 - **No sound** for MVP (hooks for later)
 
-## MVP Milestone
-1. Terminal renders 3D view via raycasting
-2. Player moves through basic level
-3. Stairs lead to next procedural floor
-4. Depth counter increases
-5. Basic corruption effects after floor ~10
+## Implementation Status
+
+### ✅ Completed (MVP Achieved)
+1. ✅ Terminal renders 3D view via raycasting (60 FPS target)
+2. ✅ Player moves through procedurally-generated levels (WASD controls)
+3. ✅ Stairs lead to next floor with discoverable hints
+4. ✅ Depth counter and corruption tracking
+5. ✅ Corruption effects starting at depth 10:
+   - Character glitching (walls flicker)
+   - Color bleeding (ANSI color shifts)
+   - Whispers (text fragments at 65%+ corruption)
+   - Fake geometry (illusory walls at 90%+ corruption)
+6. ✅ HUD with depth, corruption %, controls, stairs hints
+7. ✅ Mini-map overlay (toggleable via cheat menu)
+8. ✅ Configurable floor size (`-fs WxH` flag)
+9. ✅ Comprehensive test coverage
+
+### 🚧 Future Enhancements
+- The Watchers (non-interactive presences)
+- Smooth player movement (currently discrete)
+- Sound/audio hooks
+- Additional corruption effects
+- Save/load system

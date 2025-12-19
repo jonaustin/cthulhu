@@ -21,10 +21,25 @@ A Lovecraftian terminal-based first-person 3D game where the player descends thr
 # Build the binary
 go build -o cthulhu .
 
-# Run interactive mode
+# Run with default floor size (32x32)
 go run .
+# or
+./cthulhu
 
+# Run with custom floor size
+go run . -fs 16x16
+./cthulhu -fs 48x24
 ```
+
+### In-Game Controls
+
+- **W/S** - Move forward/backward
+- **A/D** - Rotate left/right
+- **C** - Open cheat menu (debug/testing)
+  - **T** - Teleport to specific depth
+  - **+/-** - Adjust corruption bias
+  - **M** - Toggle mini-map
+- **Q/ESC** - Quit game
 
 ### Testing
 
@@ -129,8 +144,42 @@ If unsure about any of the following, **ASK before proceeding:**
 
 ### Package Structure
 
-see doc/ARCH.md
+See doc/ARCH.md for detailed architecture documentation.
+
+**Current packages:**
+- `main` - Game loop, event handling, HUD, cheat menu (~500 LOC)
+- `engine/` - Raycaster, Player, GameMap (~600 LOC)
+- `world/` - FloorGenerator, FloorManager, Corruption (~600 LOC)
+- `render/` - Shading tables, corruption effects (~200 LOC)
+
+**Total:** ~2,735 lines of Go code with comprehensive test coverage.
 
 ### Testing Strategy
 
 ALWAYS add/update tests for new logic.
+
+All packages have test coverage. Run tests before committing:
+```bash
+go test ./...           # Run all tests
+go test -v ./...        # Verbose output
+go test -v -cover ./... # With coverage
+```
+
+### Current Game State
+
+**Implemented Features:**
+- ✅ 3D raycasting engine (ASCII first-person view, ~60 FPS)
+- ✅ Player movement (discrete WASD controls)
+- ✅ Procedural floor generation (drunk walk algorithm)
+- ✅ Floor transitions via discoverable stairs
+- ✅ Corruption system (increases with depth ≥10)
+- ✅ Visual corruption effects (glitches, whispers, fake geometry)
+- ✅ HUD with depth, corruption %, controls, hints
+- ✅ Mini-map overlay (toggleable)
+- ✅ Cheat menu for testing
+
+**Not Yet Implemented:**
+- The Watchers (non-interactive entities)
+- Smooth player movement
+- Sound/audio
+- Save/load system
