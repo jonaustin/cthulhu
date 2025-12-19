@@ -50,3 +50,37 @@ func TestApplyColorBleedAtDeterministicPerFrameAndPosition(t *testing.T) {
 		t.Fatalf("expected deterministic output, got fg %v vs %v", fga, fgb)
 	}
 }
+
+func TestVisualConfigClamp(t *testing.T) {
+	ResetVisualConfig()
+	defer ResetVisualConfig()
+
+	SetVisualConfig(VisualConfig{
+		VisualScale:          2.5,
+		MaxCharGlitchChance:  -1.0,
+		MaxColorBleedChance:  3.0,
+		WhisperWindowTicks:   -10,
+		MaxWhisperPerWindow:  2.0,
+		MaxFakeGeometryCells: -5,
+	})
+
+	cfg := GetVisualConfig()
+	if cfg.VisualScale != visualScaleMax {
+		t.Fatalf("expected visual scale clamped to %f, got %f", visualScaleMax, cfg.VisualScale)
+	}
+	if cfg.MaxCharGlitchChance != chanceMin {
+		t.Fatalf("expected char glitch clamped to %f, got %f", chanceMin, cfg.MaxCharGlitchChance)
+	}
+	if cfg.MaxColorBleedChance != chanceMax {
+		t.Fatalf("expected color bleed clamped to %f, got %f", chanceMax, cfg.MaxColorBleedChance)
+	}
+	if cfg.WhisperWindowTicks != whisperWindowMin {
+		t.Fatalf("expected whisper window clamped to %d, got %d", whisperWindowMin, cfg.WhisperWindowTicks)
+	}
+	if cfg.MaxWhisperPerWindow != chanceMax {
+		t.Fatalf("expected whisper max/window clamped to %f, got %f", chanceMax, cfg.MaxWhisperPerWindow)
+	}
+	if cfg.MaxFakeGeometryCells != maxFakeGeoCellsMin {
+		t.Fatalf("expected fake geometry cells clamped to %d, got %d", maxFakeGeoCellsMin, cfg.MaxFakeGeometryCells)
+	}
+}

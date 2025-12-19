@@ -22,13 +22,8 @@ var whispers = []string{
 }
 
 const (
-	maxCharGlitchChance  = 0.10
-	maxColorBleedChance  = 0.05
-	whisperStartLevel    = 0.65
-	fakeGeoStartLevel    = 0.90
-	whisperWindowTicks   = 45 // ~0.75s at 60fps
-	maxWhisperPerWindow  = 0.12
-	maxFakeGeometryCells = 24
+	whisperStartLevel = 0.65
+	fakeGeoStartLevel = 0.90
 )
 
 type EffectsContext struct {
@@ -65,7 +60,8 @@ func ApplyCharGlitchAt(char rune, ctx EffectsContext, x, y int) rune {
 		return char
 	}
 
-	p := clamp01(ctx.Corruption) * maxCharGlitchChance
+	cfg := GetVisualConfig()
+	p := clamp01(ctx.Corruption) * cfg.MaxCharGlitchChance * cfg.VisualScale
 	if !chance01(cellNoise(ctx, x, y, 0xA11CE), p) {
 		return char
 	}
@@ -91,7 +87,8 @@ func ApplyColorBleedAt(style tcell.Style, ctx EffectsContext, x, y int) tcell.St
 		return style
 	}
 
-	p := clamp01(ctx.Corruption) * maxColorBleedChance
+	cfg := GetVisualConfig()
+	p := clamp01(ctx.Corruption) * cfg.MaxColorBleedChance * cfg.VisualScale
 	if !chance01(cellNoise(ctx, x, y, 0xB1EED), p) {
 		return style
 	}
@@ -119,13 +116,15 @@ func RenderWhisperAt(screen tcell.Screen, ctx EffectsContext, width, height int)
 		return
 	}
 
+	cfg := GetVisualConfig()
 	intensity := clamp01((ctx.Corruption - whisperStartLevel) / (1.0 - whisperStartLevel))
+	intensity *= cfg.VisualScale
 	window := 0
-	if whisperWindowTicks > 0 {
-		window = ctx.Ticks / whisperWindowTicks
+	if cfg.WhisperWindowTicks > 0 {
+		window = ctx.Ticks / cfg.WhisperWindowTicks
 	}
 
-	if !chance01(mix64(ctx.Seed^uint64(window)^0x51A57E), intensity*maxWhisperPerWindow) {
+	if !chance01(mix64(ctx.Seed^uint64(window)^0x51A57E), intensity*cfg.MaxWhisperPerWindow) {
 		return
 	}
 
@@ -174,8 +173,10 @@ func ApplyFakeGeometryAt(screen tcell.Screen, ctx EffectsContext, width, height 
 		return
 	}
 
+	cfg := GetVisualConfig()
 	intensity := clamp01((ctx.Corruption - fakeGeoStartLevel) / (1.0 - fakeGeoStartLevel))
-	count := int(intensity * maxFakeGeometryCells)
+	intensity *= cfg.VisualScale
+	count := int(intensity * float64(cfg.MaxFakeGeometryCells))
 	if count < 1 {
 		count = 1
 	}

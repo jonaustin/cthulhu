@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"game/engine"
+	"game/render"
 	"game/world"
 
 	"github.com/gdamore/tcell/v2"
@@ -74,6 +75,31 @@ func TestCheatMenuTeleportToDepth(t *testing.T) {
 	}
 	if g.cheatMode != cheatModeMain {
 		t.Fatalf("expected cheat mode main after teleport, got %v", g.cheatMode)
+	}
+}
+
+func TestCheatMenuTuneAdjustsVisualConfig(t *testing.T) {
+	render.ResetVisualConfig()
+	defer render.ResetVisualConfig()
+
+	g := newTestGameForCheats(t)
+	g.openCheatMenu()
+
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRune, 'v', tcell.ModNone))
+	before := render.GetVisualConfig()
+
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone))
+	after := render.GetVisualConfig()
+	if after.VisualScale <= before.VisualScale {
+		t.Fatalf("expected visual scale to increase, got %f <= %f", after.VisualScale, before.VisualScale)
+	}
+
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone))
+	before = render.GetVisualConfig()
+	g.handleCheatEvent(tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModNone))
+	after = render.GetVisualConfig()
+	if after.MaxCharGlitchChance >= before.MaxCharGlitchChance {
+		t.Fatalf("expected char glitch chance to decrease, got %f >= %f", after.MaxCharGlitchChance, before.MaxCharGlitchChance)
 	}
 }
 

@@ -1,0 +1,90 @@
+package render
+
+const (
+	defaultMaxCharGlitchChance   = 0.10
+	defaultMaxColorBleedChance   = 0.05
+	defaultWhisperWindowTicks    = 45
+	defaultMaxWhisperPerWindow   = 0.12
+	defaultMaxFakeGeometryCells  = 24
+	defaultCorruptionVisualScale = 0.5
+)
+
+const (
+	visualScaleMin = 0.0
+	visualScaleMax = 1.0
+
+	chanceMin = 0.0
+	chanceMax = 1.0
+
+	whisperWindowMin = 1
+	whisperWindowMax = 300
+
+	maxFakeGeoCellsMin = 0
+	maxFakeGeoCellsMax = 200
+)
+
+// VisualConfig controls corruption visuals at runtime.
+type VisualConfig struct {
+	VisualScale          float64
+	MaxCharGlitchChance  float64
+	MaxColorBleedChance  float64
+	WhisperWindowTicks   int
+	MaxWhisperPerWindow  float64
+	MaxFakeGeometryCells int
+}
+
+var defaultVisualConfig = VisualConfig{
+	VisualScale:          defaultCorruptionVisualScale,
+	MaxCharGlitchChance:  defaultMaxCharGlitchChance,
+	MaxColorBleedChance:  defaultMaxColorBleedChance,
+	WhisperWindowTicks:   defaultWhisperWindowTicks,
+	MaxWhisperPerWindow:  defaultMaxWhisperPerWindow,
+	MaxFakeGeometryCells: defaultMaxFakeGeometryCells,
+}
+
+var visualConfig = defaultVisualConfig
+
+// GetVisualConfig returns the current corruption visual tuning values.
+func GetVisualConfig() VisualConfig {
+	return visualConfig
+}
+
+// SetVisualConfig updates the current corruption visual tuning values.
+func SetVisualConfig(cfg VisualConfig) {
+	visualConfig = sanitizeVisualConfig(cfg)
+}
+
+// ResetVisualConfig restores default corruption visual tuning values.
+func ResetVisualConfig() {
+	visualConfig = defaultVisualConfig
+}
+
+func sanitizeVisualConfig(cfg VisualConfig) VisualConfig {
+	cfg.VisualScale = clampFloat(cfg.VisualScale, visualScaleMin, visualScaleMax)
+	cfg.MaxCharGlitchChance = clampFloat(cfg.MaxCharGlitchChance, chanceMin, chanceMax)
+	cfg.MaxColorBleedChance = clampFloat(cfg.MaxColorBleedChance, chanceMin, chanceMax)
+	cfg.MaxWhisperPerWindow = clampFloat(cfg.MaxWhisperPerWindow, chanceMin, chanceMax)
+	cfg.WhisperWindowTicks = clampInt(cfg.WhisperWindowTicks, whisperWindowMin, whisperWindowMax)
+	cfg.MaxFakeGeometryCells = clampInt(cfg.MaxFakeGeometryCells, maxFakeGeoCellsMin, maxFakeGeoCellsMax)
+	return cfg
+}
+
+func clampFloat(v, lo, hi float64) float64 {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+func clampInt(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}

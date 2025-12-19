@@ -38,6 +38,7 @@ type Game struct {
 	cheatMode           cheatMode
 	cheatTeleportBuffer []rune
 	cheatMessage        string
+	cheatTuneIndex      int
 }
 
 func NewGame(screen tcell.Screen, floorWidth, floorHeight int) *Game {

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"unicode"
 
+	"game/render"
+
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -14,11 +16,30 @@ type cheatMode int
 const (
 	cheatModeMain cheatMode = iota
 	cheatModeTeleport
+	cheatModeCorruptionTune
 )
 
 const (
 	cheatCorruptionStep = 0.05
 	cheatTeleportMaxBuf = 6
+)
+
+const (
+	tuneVisualScale = iota
+	tuneCharGlitchChance
+	tuneColorBleedChance
+	tuneWhisperWindowTicks
+	tuneWhisperMaxPerWindow
+	tuneFakeGeoMaxCells
+	tuneParamCount
+)
+
+const (
+	tuneVisualScaleStep     = 0.05
+	tuneChanceStep          = 0.01
+	tuneWhisperWindowStep   = 5
+	tuneWhisperMaxStep      = 0.02
+	tuneFakeGeoMaxCellsStep = 1
 )
 
 func (g *Game) handleCheatEvent(ev *tcell.EventKey) bool {
@@ -46,7 +67,7 @@ func (g *Game) handleCheatEvent(ev *tcell.EventKey) bool {
 
 	switch ev.Key() {
 	case tcell.KeyEscape:
-		if g.cheatMode == cheatModeTeleport {
+		if g.cheatMode == cheatModeTeleport || g.cheatMode == cheatModeCorruptionTune {
 			g.cheatMode = cheatModeMain
 			g.cheatTeleportBuffer = g.cheatTeleportBuffer[:0]
 			g.cheatMessage = ""
@@ -62,6 +83,26 @@ func (g *Game) handleCheatEvent(ev *tcell.EventKey) bool {
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if g.cheatMode == cheatModeTeleport && len(g.cheatTeleportBuffer) > 0 {
 			g.cheatTeleportBuffer = g.cheatTeleportBuffer[:len(g.cheatTeleportBuffer)-1]
+			return true
+		}
+	case tcell.KeyUp:
+		if g.cheatMode == cheatModeCorruptionTune {
+			g.adjustTuneSelection(-1)
+			return true
+		}
+	case tcell.KeyDown:
+		if g.cheatMode == cheatModeCorruptionTune {
+			g.adjustTuneSelection(1)
+			return true
+		}
+	case tcell.KeyLeft:
+		if g.cheatMode == cheatModeCorruptionTune {
+			g.adjustTuneValue(-1)
+			return true
+		}
+	case tcell.KeyRight:
+		if g.cheatMode == cheatModeCorruptionTune {
+			g.adjustTuneValue(1)
 			return true
 		}
 	}
@@ -85,6 +126,10 @@ func (g *Game) handleCheatEvent(ev *tcell.EventKey) bool {
 		g.closeCheatMenu()
 	case 'm', 'M':
 		g.ShowMiniMap = !g.ShowMiniMap
+	case 'v', 'V':
+		g.cheatMode = cheatModeCorruptionTune
+		g.cheatTuneIndex = 0
+		g.cheatMessage = ""
 	case 'w', 'W':
 		g.ShowWatchers = !g.ShowWatchers
 	case 'p', 'P':
@@ -115,6 +160,7 @@ func (g *Game) openCheatMenu() {
 	g.cheatMode = cheatModeMain
 	g.cheatTeleportBuffer = g.cheatTeleportBuffer[:0]
 	g.cheatMessage = ""
+	g.cheatTuneIndex = 0
 }
 
 func (g *Game) closeCheatMenu() {
@@ -122,6 +168,7 @@ func (g *Game) closeCheatMenu() {
 	g.cheatMode = cheatModeMain
 	g.cheatTeleportBuffer = g.cheatTeleportBuffer[:0]
 	g.cheatMessage = ""
+	g.cheatTuneIndex = 0
 }
 
 func (g *Game) commitTeleport() {
@@ -244,10 +291,14 @@ func (g *Game) cheatMenuLines() []string {
 			"Esc: Back",
 		}
 	}
+	if g.cheatMode == cheatModeCorruptionTune {
+		return g.tuneMenuLines()
+	}
 
 	lines := []string{
 		"CHEATS",
 		fmt.Sprintf("M: Toggle map (%s)", onOff(g.ShowMiniMap)),
+		"V: Tune corruption visuals",
 		fmt.Sprintf("W: Toggle watchers (%s)", onOff(g.ShowWatchers)),
 		"P: Snapshot frame",
 		"T: Teleport to floor",
@@ -260,9 +311,74 @@ func (g *Game) cheatMenuLines() []string {
 	return lines
 }
 
+func (g *Game) tuneMenuLines() []string {
+	cfg := render.GetVisualConfig()
+
+	lines := []string{
+		"CHEATS: CORRUPTION TUNING",
+		"Use Up/Down to select, Left/Right to adjust",
+		formatTuneLine(tuneVisualScale, g.cheatTuneIndex, fmt.Sprintf("Visual scale: %.2f", cfg.VisualScale)),
+		formatTuneLine(tuneCharGlitchChance, g.cheatTuneIndex, fmt.Sprintf("Char glitch max: %.2f", cfg.MaxCharGlitchChance)),
+		formatTuneLine(tuneColorBleedChance, g.cheatTuneIndex, fmt.Sprintf("Color bleed max: %.2f", cfg.MaxColorBleedChance)),
+		formatTuneLine(tuneWhisperWindowTicks, g.cheatTuneIndex, fmt.Sprintf("Whisper window ticks: %d", cfg.WhisperWindowTicks)),
+		formatTuneLine(tuneWhisperMaxPerWindow, g.cheatTuneIndex, fmt.Sprintf("Whisper max/window: %.2f", cfg.MaxWhisperPerWindow)),
+		formatTuneLine(tuneFakeGeoMaxCells, g.cheatTuneIndex, fmt.Sprintf("Fake geo max cells: %d", cfg.MaxFakeGeometryCells)),
+		"Esc: Back",
+	}
+
+	return lines
+}
+
+func formatTuneLine(index, selected int, text string) string {
+	prefix := "  "
+	if index == selected {
+		prefix = "> "
+	}
+	return prefix + text
+}
+
 func onOff(v bool) string {
 	if v {
 		return "ON"
 	}
 	return "OFF"
+}
+
+func (g *Game) adjustTuneSelection(delta int) {
+	if g == nil || delta == 0 {
+		return
+	}
+	idx := g.cheatTuneIndex + delta
+	if idx < 0 {
+		idx = tuneParamCount - 1
+	}
+	if idx >= tuneParamCount {
+		idx = 0
+	}
+	g.cheatTuneIndex = idx
+}
+
+func (g *Game) adjustTuneValue(delta int) {
+	if g == nil || delta == 0 {
+		return
+	}
+
+	cfg := render.GetVisualConfig()
+
+	switch g.cheatTuneIndex {
+	case tuneVisualScale:
+		cfg.VisualScale += float64(delta) * tuneVisualScaleStep
+	case tuneCharGlitchChance:
+		cfg.MaxCharGlitchChance += float64(delta) * tuneChanceStep
+	case tuneColorBleedChance:
+		cfg.MaxColorBleedChance += float64(delta) * tuneChanceStep
+	case tuneWhisperWindowTicks:
+		cfg.WhisperWindowTicks += delta * tuneWhisperWindowStep
+	case tuneWhisperMaxPerWindow:
+		cfg.MaxWhisperPerWindow += float64(delta) * tuneWhisperMaxStep
+	case tuneFakeGeoMaxCells:
+		cfg.MaxFakeGeometryCells += delta * tuneFakeGeoMaxCellsStep
+	}
+
+	render.SetVisualConfig(cfg)
 }
